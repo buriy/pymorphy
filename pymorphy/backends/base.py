@@ -66,6 +66,16 @@ class DictDataSource(object):
         self.accents=[] # ударения, не используется
         self.logs=[] # логи работы с оригинальной программой от aot, не используется
 
+    def calculate_suffixes(self):
+        self.rule_suffixes = {}
+        self.rule_initial = {}
+        for paradigm_id, rule in self.rules.iteritems():
+            suffixes = self.rule_suffixes[int(paradigm_id)] = {}
+            self.rule_initial[int(paradigm_id)] = rule[0][0] 
+            for rule_suffix, rule_ancode, rule_prefix in rule:
+                suffixes.setdefault(rule_suffix, [])
+                suffixes[rule_suffix].append((rule_suffix, rule_ancode, rule_prefix))
+
     def load(self):
         """ Загрузить данные """
         raise NotImplementedError
@@ -82,6 +92,7 @@ class DictDataSource(object):
         Требуется для предсказателя, чтобы выбирать наиболее распространенные
         варианты.
         """
+        return # FIXME
         for lemma in self.lemmas:
             for paradigm_id in self.lemmas[lemma]:
                 self.rule_freq[paradigm_id] = self.rule_freq.get(paradigm_id,0)+1

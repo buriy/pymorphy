@@ -1,4 +1,5 @@
 #coding: utf-8
+import os.path
 try:
     from cPickle import Pickler, Unpickler
 except ImportError:
@@ -12,12 +13,12 @@ class PickleDataSource(DictDataSource):
         сохранены данные. Самый быстрый, но ест уйму памяти (> 100 MB).
     """
 
-    def __init__(self, file):
-        self.file = file
+    def __init__(self, dest_dir):
+        self.file = os.path.join(dest_dir, 'morphs.pickle')
         super(PickleDataSource, self).__init__()
 
     def load(self):
-        pickle_file = open(self.file,'rb')
+        pickle_file = open(self.file, 'rb')
         p = Unpickler(pickle_file)
         self.lemmas = p.load()
         self.rules = p.load()
@@ -26,9 +27,10 @@ class PickleDataSource(DictDataSource):
         self.possible_rule_prefixes = p.load()
         self.endings = p.load()
         self.rule_freq = p.load or {}
+        self.calculate_suffixes()
 
     def convert_and_save(self, data_obj):
-        pickle_file = open(self.file,'wb')
+        pickle_file = open(self.file, 'wb')
         p = Pickler(pickle_file, -1)
         p.dump(data_obj.lemmas)
         p.dump(data_obj.rules)

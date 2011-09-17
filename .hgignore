@@ -42,3 +42,7 @@ stuff
 docs/_*
 bench/do.py
 forum
+
+#symlinks
+django/
+dicts/

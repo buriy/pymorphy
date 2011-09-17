@@ -2,6 +2,7 @@
 from shelve import DbfilenameShelf
 from struct import pack, unpack
 import marshal
+import cPickle
 try:
     import simplejson as json
 except ImportError:
@@ -18,6 +19,10 @@ class ShelfWithHooks(DbfilenameShelf):
            'loads': marshal.loads,
            'dumps': marshal.dumps
         },
+        'pickle': {
+           'loads': cPickle.loads,
+           'dumps': lambda value: cPickle.dumps(value, protocol=-1)
+        },
         'json':  {
            'loads': json.loads,
            'dumps': json_dumps
@@ -31,7 +36,7 @@ class ShelfWithHooks(DbfilenameShelf):
           },
          'int': {
              'encode': lambda key: pack("H", int(key)),
-             'decode': lambda key: unpack('H', key),
+             'decode': lambda key: unpack('H', key)[0],
           },
           'str': {
              'encode': lambda key: key,
@@ -67,6 +72,10 @@ class ShelfWithHooks(DbfilenameShelf):
 
     def __getitem__(self, key):
         return self._loads_value(self.dict[self._encode_key(key)])
+
+    def iteritems(self):
+        for key, value in self.dict.iteritems():
+            yield self._decode_key(key), self._loads_value(value)
 
     def _contains__cached(self, key):
         if key in self.cache:

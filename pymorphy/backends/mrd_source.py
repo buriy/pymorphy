@@ -20,9 +20,10 @@ class MrdDataSource(DictDataSource):
 
     def load(self):
         self._load(self.dict_name, self.gramtab_name)
-        self.calculate_rule_freq()
-        self._calculate_endings()
-        self._cleanup_endings()
+        # FIXME
+        #self.calculate_rule_freq()
+        #self._calculate_endings()
+        #self._cleanup_endings()
 
 #----------- protected methods -------------
 

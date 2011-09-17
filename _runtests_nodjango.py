@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import sys
-sys.path.insert(0, '.')
+import os
+sys.path.insert(0, os.path.abspath('.'))
 
 from pymorphy.morph_tests.graminfo import *
 from pymorphy.morph_tests.utilities import *

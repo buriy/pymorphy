@@ -9,7 +9,7 @@ class MyPrettyPrinter(PrettyPrinter):
             if repr[0] in ('"', "'"):
                 repr = repr.decode('string_escape')
             elif repr[0:2] in ("u'", 'u"'):
-                repr = repr.decode('unicode_escape').encode(sys.stdout.encoding)
+                repr = repr.decode('unicode_escape').encode(sys.stdout.encoding or sys.getfilesystemencoding())
         return repr, readable, recursive
 
 def pprint(obj, stream=None, indent=1, width=80, depth=None):

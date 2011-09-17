@@ -8,6 +8,7 @@ import codecs
 import os
 
 from pymorphy.backends import MrdDataSource, ShelveDataSource, PickleDataSource
+from pymorphy.backends.trie_source import TrieDataSource
 
 def _unlink(fn):
     try:
@@ -27,8 +28,8 @@ def load_mrd(dir):
                                strip_EE=True)
     mrd_source.load()
 
-    print('calculating rule frequencies...')
-    mrd_source.calculate_rule_freq()
+    #print('calculating rule frequencies...')
+    #mrd_source.calculate_rule_freq()
     return mrd_source
 
 
@@ -36,7 +37,7 @@ def make_pickled(dest_dir, mrd):
     print('creating pickled dictionary...')
     name = os.path.join(dest_dir, 'morphs.pickle')
     _unlink(name)
-    source = PickleDataSource(name)
+    source = PickleDataSource(dest_dir)
     source.convert_and_save(mrd)
     source.load()
     source._check_self()
@@ -55,6 +56,22 @@ def make_shelve(dest_dir, mrd, backend):
         source.convert_and_save(mrd)
         source.load()
         mrd._check_other(source)
+    except ImportError:
+        print "Backend %s is not available." % backend
+
+
+def make_trie(dest_dir, mrd, backend='trie', encoding='utf-8'):
+    print('creating %s dictionary...' % backend)
+
+    for fn in ['lemmas', 'rules', 'endings', 'misc', 'freq']:
+        _unlink(os.path.join(dest_dir, fn+'.'+backend))
+        _unlink(os.path.join(dest_dir, fn+'.'+backend+'.tmp'))
+
+    try:
+        source = TrieDataSource(dest_dir, backend, encoding=encoding)
+        source.convert_and_save(mrd)
+        source.load()
+        #mrd._check_other(source)
     except ImportError:
         print "Backend %s is not available." % backend
 
@@ -103,12 +120,13 @@ if __name__ == '__main__':
     en_dest = os.path.join(dest_dir, 'en')
 
     mrd = load_mrd(en_dest)
-    make_pickled(en_dest, mrd)
-    make_shelve(en_dest, mrd, 'shelve')     # bsddb
-    make_shelve(en_dest, mrd, 'cdb')        # cdb
-    make_shelve(en_dest, mrd, 'tch')        # tokyo cabinet hash
-    make_shelve(en_dest, mrd, 'tcb')        # tokyo cabinet btree+
-    make_shelve(en_dest, mrd, 'sqlite')     # sqlite
+#    make_pickled(en_dest, mrd)
+#    make_shelve(en_dest, mrd, 'shelve')      # bsddb
+#    make_shelve(en_dest, mrd, 'cdb')         # cdb
+#    make_shelve(en_dest, mrd, 'tch')         # tokyo cabinet hash
+#    make_shelve(en_dest, mrd, 'tcb')         # tokyo cabinet btree+
+#    make_shelve(en_dest, mrd, 'sqlite')      # sqlite
+    make_trie(en_dest, mrd, encoding='latin1')# trie
     cleanup_after_convert(en_dest)
 
 # ======= ru ===========
@@ -116,12 +134,13 @@ if __name__ == '__main__':
     ru_dest = os.path.join(dest_dir, 'ru')
 
     mrd = load_mrd(ru_dest)
-    make_pickled(ru_dest, mrd)
-    make_shelve(ru_dest, mrd, 'shelve')     # bsddb
-    make_shelve(ru_dest, mrd, 'cdb')        # cdb
-    make_shelve(ru_dest, mrd, 'tch')        # tokyo cabinet hash
-    make_shelve(ru_dest, mrd, 'tcb')        # tokyo cabinet btree+
-    make_shelve(ru_dest, mrd, 'sqlite')     # sqlite
+#    make_pickled(ru_dest, mrd)
+#    make_shelve(ru_dest, mrd, 'shelve')     # bsddb
+#    make_shelve(ru_dest, mrd, 'cdb')        # cdb
+#    make_shelve(ru_dest, mrd, 'tch')        # tokyo cabinet hash
+#    make_shelve(ru_dest, mrd, 'tcb')        # tokyo cabinet btree+
+#    make_shelve(ru_dest, mrd, 'sqlite')     # sqlite
+    make_trie(ru_dest, mrd, encoding='cp1251')# trie
     cleanup_after_convert(ru_dest)
 
     print "done."

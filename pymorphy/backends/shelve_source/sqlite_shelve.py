@@ -22,9 +22,18 @@ class SqliteDict(object):
         self.ADD_ITEM = 'REPLACE INTO %s (key, value) VALUES (?,?)' % self._table
         self.CLEAR_ALL = 'DELETE FROM %s;  VACUUM;' % self._table
         self.HAS_ITEM = 'SELECT 1 FROM %s WHERE key = ?' % self._table
+        self.LENGTH = 'SELECT count(*) FROM %s' % self._table
+        self.ITERATE = 'SELECT key, value FROM %s' % self._table
 
         self.conn.execute(self.MAKE_SHELF)
         self.conn.commit()
+
+    def __len__(self):
+        return self.conn.execute(self.LENGTH).fetchone()[0]
+
+    def iteritems(self):
+        for k, v in self.conn.execute(self.ITERATE).fetchall():
+            yield k, v
 
     def has_key(self, key):
         return self.conn.execute(self.HAS_ITEM, (key,)).fetchone() is not None

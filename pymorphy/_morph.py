@@ -2,10 +2,9 @@
 ## cython: profile=True
 
 from copy import deepcopy
-
-from pymorphy.constants import *
 from pymorphy.backends import PickleDataSource, ShelveDataSource
-from pymorphy.utils import pprint
+from pymorphy.backends.trie_source import TrieDataSource
+from pymorphy.constants import *
 
 def _get_split_variants(word):
     """ Вернуть все варианты разбиения слова на 2 части """
@@ -391,26 +390,28 @@ class Morph(object):
         return forms
 
 
-    def _get_lemma_graminfo(self, lemma, suffix, require_prefix, method_format_str):
+    def _get_lemma_graminfo(self, lemma, suffix, lemma_id, suffix_id, require_prefix, method_format_str, gram):
         """ Получить грам. информацию по лемме и суффиксу. Для леммы перебираем все
             правила, смотрим, есть ли среди них такие, которые приводят к
             образованию слов с подходящими окончаниями.
         """
-        rules = self.data.rules
+        lemma_paradigms = self.data.paradigm_list[lemma_id]
+        
         gramtab = self.data.gramtab
-        lemma_paradigms = self.data.lemmas[lemma or u'#']
-        gram = []
+        
         # для леммы смотрим все доступные парадигмы
         for paradigm_id in lemma_paradigms:
-            paradigm = rules[paradigm_id]
-
-            norm_form = lemma + paradigm[0][0]
-
+            paradigm = self.data.suffix_dict.get((suffix_id, paradigm_id))
+            #paradigm = self.data.rules[paradigm_id]
+            if paradigm:
+                #norm_form = ''
+                #norm_form = lemma + paradigm[0][0]
             # все правила в парадигме
-            for rule_suffix, rule_ancode, rule_prefix in paradigm:
+                for rule_ancode, rule_prefix in paradigm:
                 # если по правилу выходит, что окончание такое, как надо,
                 # то значит нашли, что искали
-                if rule_suffix==suffix and rule_prefix==require_prefix:
+                    if rule_prefix==require_prefix:
+                        norm_form = lemma + self.data.initial_forms.get(paradigm_id)
                     gram_class, info, _ = gramtab[rule_ancode]
                     data = {
                         'norm': norm_form,
@@ -637,23 +638,24 @@ class Morph(object):
         gram = []
 
         # вариант с пустой основой слова
-        gram.extend(self._flexion_graminfo(word, require_prefix))
+        #gram.extend(self._flexion_graminfo(word, require_prefix))
 
         # основная проверка по словарю: разбиваем слово на 2 части,
         # считаем одну из них основой, другую окончанием
         # (префикс считаем пустым, его обработаем отдельно)
-        variants = _get_split_variants(word)
-        for (lemma, suffix) in variants:
-            if lemma in self.data.lemmas:
-                gram.extend(
-                    [info for info in
-                        self._get_lemma_graminfo(lemma, suffix, require_prefix,
-                                                 u'lemma(%s).suffix(%s)')
-                    ]
-                )
+        #variants = _get_split_variants(word)
+        encword = word.encode(self.data.encoding)
+        #suff = dict(self.data.suffix_trie.find_prefixes(encword))
+        splits = self.data.lemmas_trie.find_splits(self.data.suffixes_trie, encword)
+        for lemma_len, lemma_id, suffix_id in splits:
+            self._get_lemma_graminfo(word[:lemma_len], word[lemma_len:], lemma_id, 
+                                     suffix_id, require_prefix,
+                                     u'lemma(%s).suffix(%s)', gram)
+
 
         # вариант с фиксированным префиксом
-        gram.extend(self._static_prefix_graminfo(variants, require_prefix))
+        #variants = _get_split_variants(word)
+        #gram.extend(self._static_prefix_graminfo(variants, require_prefix))
 
         # обработка буквы Ё, если требуется
         if not gram and self.handle_EE and predict_EE:
@@ -674,7 +676,7 @@ class Morph(object):
         return gram
 
 
-def get_morph(path, backend='sqlite', cached=True, **kwargs):
+def get_morph(path, backend='trie', cached=True, **kwargs):
     """
     Вернуть объект с морфологическим анализатором (Morph).
 
@@ -690,5 +692,6 @@ def get_morph(path, backend='sqlite', cached=True, **kwargs):
     """
     if backend == 'pickle':
         return Morph(PickleDataSource(path), **kwargs)
+    elif backend == 'trie':
+        return Morph(TrieDataSource(path, backend), **kwargs)
     return Morph(ShelveDataSource(path, backend, cached=cached), **kwargs)
-

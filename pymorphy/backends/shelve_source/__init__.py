@@ -33,6 +33,8 @@ class ShelveDataSource(DictDataSource):
         self.prefixes = set(misc['prefixes'])
         self.possible_rule_prefixes = set(misc['possible_rule_prefixes'])
 
+        self.calculate_suffixes()
+        
     def convert_and_save(self, data_obj):
         lemma_shelve = self._get_shelf('lemmas', 'c', 'unicode')
         rules_shelve = self._get_shelf('rules', 'c', 'int')
